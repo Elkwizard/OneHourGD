@@ -64,9 +64,11 @@
 		static makeSeveral(x, count) {
 			const { WIDTH } = OBSTACLE;
 			const space = 5;
+			let height = 1;
 			for (let i = 0; i < count; i++) {
 				let i0 = i * space;
-				PLATFORM.create(x + i0 * WIDTH, i + 1);
+				PLATFORM.create(x + i0 * WIDTH, height);
+				height++;
 				for (let j = 1; j < space; j++)
 					OBSTACLE.create(x + (i0 + j) * WIDTH);
 			}
@@ -104,7 +106,7 @@
 			this.reset();
 		}
 		reset(obj) {
-			obj.transform.position = new Vector2(width / 2, height - 200);
+			obj.transform.position = new Vector2(width * 0.25, height - 200);
 			this.dead = false;
 			this.angle = 0;
 			this.angleVelocity = 0;
