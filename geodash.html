@@ -1,6 +1,8 @@
 <script src="https://elkwizard.github.io/Hengine/Hengine.js" title="Bad Geometry Dash">
 	scene.gravity.y = 1.2;
 
+	fileSystem.createFile("highscore.number", 0);
+
 	class SCROLL extends ElementScript {
 		static SPEED = 10;
 		update(obj) {		
@@ -104,6 +106,7 @@
 			this.dead = false;
 			this.angle = 0;
 			this.angleVelocity = 0;
+			this.score = 0;
 			scene.main.removeElements(scene.main.getElementsWithScript(SCROLL));
 			delay = 0;
 		}
@@ -118,6 +121,10 @@
 			this.angle = Math.ceil(this.angle / (Math.PI / 2)) * Math.PI / 2;
 		}
 		update(obj) {
+			if (this.dead) return;
+			this.score += 100 / 60;
+			if (this.score > fileSystem.readFile("highschore.number"))
+				fileSystem.writeFile("highscore.number", this.score);
 			const { rb } = this;
 			if ((keyboard.pressed(" ") || mouse.pressed("Left")) && rb.colliding.bottom) {
 				rb.velocity.y = -18;
@@ -143,6 +150,10 @@
 	const player = scene.main.addPhysicsRectElement("player", 0, 0, 50, 50, true);
 	player.scripts.add(PLAYER);
 
+	function formatScore(score) {
+		return Math.round(score).toLocaleString();
+	}
+
 	intervals.continuous(time => {
 		if (delay <= 0) {
 			const x = width + 200;
@@ -155,5 +166,7 @@
 			delay = Random.int(40, 60) + offset / SCROLL.SPEED;
 		}
 		delay--;
+
+		renderer.draw(Color.BLACK).text(Font.Cursive40, `Highscore: ${formatScore(fileSystem.readFile("highscore.number"))}\nCurrent Score: ${player.scripts.PLAYER.score}`, 10, 10);
 	}, IntervalFunction.AFTER_UPDATE);
 </script>
