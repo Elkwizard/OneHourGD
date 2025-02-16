@@ -3,6 +3,8 @@
 
 	fileSystem.createFile("highscore.number", () => 0);
 
+	const font = new Font(40, "Comic Sans MS");
+
 	class SCROLL extends ElementScript {
 		static SPEED = 10;
 		update(obj) {		
@@ -167,6 +169,6 @@
 		}
 		delay--;
 
-		renderer.draw(Color.BLACK).text(Font.Cursive40, `Highscore: ${formatScore(fileSystem.readFile("highscore.number"))}\nCurrent Score: ${formatScore(player.scripts.PLAYER.score)}`, 10, 10);
+		renderer.draw(Color.BLACK).text(font, `Highscore: ${formatScore(fileSystem.readFile("highscore.number"))}\nCurrent Score: ${formatScore(player.scripts.PLAYER.score)}`, 10, 10);
 	}, IntervalFunction.AFTER_UPDATE);
 </script>
