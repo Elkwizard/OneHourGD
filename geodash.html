@@ -1,0 +1,159 @@
+<script src="https://elkwizard.github.io/Hengine/Hengine.js">
+	scene.gravity.y = 1.2;
+
+	class SCROLL extends ElementScript {
+		static SPEED = 10;
+		update(obj) {		
+			if (player.scripts.PLAYER.dead) return;
+			obj.transform.position.x -= SCROLL.SPEED;
+			if (obj.getBoundingBox().max.x < scene.camera.screen.min.x)
+				obj.remove();
+		}
+	}
+
+	class OBSTACLE extends ElementScript {
+		static WIDTH = 52;
+		static HEIGHT = 50;
+		init(obj) {
+			obj.scripts.removeDefault();
+			obj.scripts.add(SCROLL);
+			this.color = Random.color();
+		}
+		collideGeneral(obj, { element }) {
+			if (element === player) player.scripts.PLAYER.die();
+		}
+		draw(obj, name, shape) {
+			renderer.draw(this.color).infer(shape);
+		}
+		static create(x) {
+			const { WIDTH, HEIGHT } = OBSTACLE;
+			const obstacle = scene.main.addPhysicsElement("obstacle", x, floor.getBoundingBox().y - HEIGHT / 2);
+			obstacle.defaultShape = new Polygon([
+				new Vector2(0, -HEIGHT / 2),
+				new Vector2(WIDTH / 2, HEIGHT / 2),
+				new Vector2(-WIDTH / 2, HEIGHT / 2)
+			]);
+			obstacle.scripts.add(OBSTACLE);
+			return obstacle;
+		}
+		static makeSeveral(x, count) {
+			for (let i = 0; i < count; i++) {
+				OBSTACLE.create(x + i * OBSTACLE.WIDTH);
+			}
+			return OBSTACLE.WIDTH * count;
+		}
+	}
+	class PLATFORM extends ElementScript {
+		init(obj) {
+			obj.scripts.add(SCROLL);
+		}
+		collideGeneral(obj, { element, direction }) {
+			if (element === player && direction.y > -0.5) player.scripts.PLAYER.die();
+		}
+		static create(x, height) {
+			const { WIDTH, HEIGHT } = OBSTACLE;
+			height *= HEIGHT;
+			const platform = scene.main.addPhysicsRectElement("platform", x, floor.getBoundingBox().y - height / 2, WIDTH, height);
+			platform.scripts.add(PLATFORM);
+			return platform;
+		}
+		static makeSeveral(x, count) {
+			const { WIDTH } = OBSTACLE;
+			const space = 5;
+			for (let i = 0; i < count; i++) {
+				let i0 = i * space;
+				PLATFORM.create(x + i0 * WIDTH, i + 1);
+				for (let j = 1; j < space; j++)
+					OBSTACLE.create(x + (i0 + j) * WIDTH);
+			}
+			return count * WIDTH * space;
+		}
+	}
+	
+	const deathParticles = scene.main.addElement("deathParticles", 0, 0);
+	deathParticles.scripts.add(PARTICLE_SPAWNER, {
+		active: false,
+		radius: 5,
+		lifeSpan: 60,
+		slows: false,
+		falls: false,
+		init(p) {
+			p.velocity = Vector2.polar(Random.angle(), Random.range(5, 10));
+			p.data.color = new Color(255, Random.range(50, 200), 30);
+			p.data.size = Random.range(3, 8);
+		},
+		update(p) {
+			p.velocity.mul(0.995);
+		},
+		draw(gl, p) {
+			gl.alpha = Math.max(0, 1 - p.timer);
+			gl.draw(p.data.color).circle(p.position, p.data.size);
+		}
+	});
+
+	class PLAYER extends ElementScript {
+		init(obj) {
+			obj.scripts.removeDefault();
+			this.rb = obj.scripts.PHYSICS;
+			const { rb } = this;
+			rb.canRotate = false;
+			this.reset();
+		}
+		reset(obj) {
+			obj.transform.position = new Vector2(width / 2, height - 200);
+			this.dead = false;
+			this.angle = 0;
+			this.angleVelocity = 0;
+			scene.main.removeElements(scene.main.getElementsWithScript(SCROLL));
+			delay = 0;
+		}
+		die(obj) {
+			if (this.dead) return;
+			this.dead = true;
+			deathParticles.scripts.PARTICLE_SPAWNER.explode(40, obj.transform.position);
+			intervals.delay(() => this.reset(), 60);
+		}
+		collideGeneral(obj, { element }) {
+			this.angleVelocity = 0;
+			this.angle = Math.ceil(this.angle / (Math.PI / 2)) * Math.PI / 2;
+		}
+		update(obj) {
+			const { rb } = this;
+			if ((keyboard.pressed(" ") || mouse.pressed("Left")) && rb.colliding.bottom) {
+				rb.velocity.y = -18;
+				this.angleVelocity = 0.1;	
+			}
+			if (rb.velocity.y > 0) rb.velocity.y += 0.3;
+			rb.velocity.x = 0;
+			this.angle += this.angleVelocity;
+		}
+		draw(obj, name, shape) {
+			if (this.dead) return;
+			renderer.save();
+			renderer.rotate(this.angle);
+			renderer.draw(Color.ORANGE).rect(shape);
+			renderer.stroke(Color.RED, 3).rect(shape);
+			renderer.restore();
+		}
+	}
+
+	let delay = 0;
+
+	const floor = scene.main.addPhysicsRectElement("floor", width / 2, height, width, 100);
+	const player = scene.main.addPhysicsRectElement("player", 0, 0, 50, 50, true);
+	player.scripts.add(PLAYER);
+
+	intervals.continuous(time => {
+		if (delay <= 0) {
+			const x = width + 200;
+			let offset;
+			if (Random.bool()) {
+				offset = PLATFORM.makeSeveral(x, Random.int(1, 8));
+			} else {
+				offset = OBSTACLE.makeSeveral(x, Random.int(1, 3));
+			}
+			delay = Random.int(40, 60) + offset / SCROLL.SPEED;
+		}
+		delay--;
+	}, IntervalFunction.AFTER_UPDATE);
+</script>
