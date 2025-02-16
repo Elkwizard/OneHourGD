@@ -1,7 +1,7 @@
 <script src="https://elkwizard.github.io/Hengine/Hengine.js" title="Bad Geometry Dash">
 	scene.gravity.y = 1.2;
 
-	fileSystem.createFile("highscore.number", 0);
+	fileSystem.createFile("highscore.number", () => 0);
 
 	class SCROLL extends ElementScript {
 		static SPEED = 10;
