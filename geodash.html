@@ -123,7 +123,7 @@
 		update(obj) {
 			if (this.dead) return;
 			this.score += 100 / 60;
-			if (this.score > fileSystem.readFile("highschore.number"))
+			if (this.score > fileSystem.readFile("highscore.number"))
 				fileSystem.writeFile("highscore.number", this.score);
 			const { rb } = this;
 			if ((keyboard.pressed(" ") || mouse.pressed("Left")) && rb.colliding.bottom) {
@@ -167,6 +167,6 @@
 		}
 		delay--;
 
-		renderer.draw(Color.BLACK).text(Font.Cursive40, `Highscore: ${formatScore(fileSystem.readFile("highscore.number"))}\nCurrent Score: ${player.scripts.PLAYER.score}`, 10, 10);
+		renderer.draw(Color.BLACK).text(Font.Cursive40, `Highscore: ${formatScore(fileSystem.readFile("highscore.number"))}\nCurrent Score: ${formatScore(player.scripts.PLAYER.score)}`, 10, 10);
 	}, IntervalFunction.AFTER_UPDATE);
 </script>
